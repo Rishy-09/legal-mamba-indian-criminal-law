@@ -22,8 +22,6 @@ ENV/
 *.pth
 model_*.pth
 
-# Data
-
 # Jupyter
 .ipynb_checkpoints
 

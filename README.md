@@ -1,158 +1,551 @@
-# legal-mamba-indian-criminal-law
+<div align="center">
 
-Professional project README — in-depth guide, rationale, and reproducibility checklist for training and evaluating a Mamba SSM-based language model on Indian criminal law text.
+# ⚖️ Legal-Mamba
 
-Overview
---------
-This repository provides a compact, reproducible training pipeline for a domain-adapted language model based on the Mamba selective state-space (SSM) architecture. The goal is to train a small-to-medium model targeted at Indian criminal law (statutes and court judgments) for research and proof-of-concept use-cases such as legal drafting assistance, search, and document understanding.
+### A Domain-Specific Mamba Language Model for Indian Criminal Law
 
-This README is intended for engineers and researchers who want to reproduce the experiments, extend the codebase, or productionize the model responsibly.
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.x-red.svg)](https://pytorch.org/)
+[![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
+[![Kaggle](https://img.shields.io/badge/Kaggle-Notebook-20BEFF.svg)](https://www.kaggle.com/code/namanchanana/legal-mamba-training-on-indian-criminal-law)
+[![Status](https://img.shields.io/badge/Status-Research%20Project-success.svg)]()
 
-Why this repo exists
----------------------
-- Minimal, explainable Mamba implementation suitable for research and education.
-- End-to-end pipeline: corpus extraction → normalization → tokenizer → model training → checkpoints.
-- Focused dataset (Indian criminal law) to explore domain-adaptation for legal language models.
+*A lightweight autoregressive language model built using the Mamba State Space Model (SSM) architecture and trained on Indian criminal law documents.*
 
-High-level architecture
------------------------
-- Tokenization: custom BPE tokenizer trained on the cleaned legal corpus using `tokenizers`.
-- Model: `Mamba` (SSM-based) implemented in `src/mamba.py`, wrapped by `src/model.py` for experiments.
-- Training loop: PyTorch-based training with AdamW, gradient clipping, cosine annealing LR schedule, and checkpointing in `src/train.py`.
+</div>
 
-Mermaid: Data & Training flow
+---
+
+> **Legal-Mamba** explores the application of State Space Models (SSMs) to legal language modeling by training a compact autoregressive model on a curated corpus of Indian criminal law documents. The project covers the complete pipeline—from corpus preparation and tokenizer training to model training and text generation—in a fully reproducible workflow.
+
+---
+
+# Table of Contents
+
+- Overview
+- Features
+- Why Mamba?
+- Project Highlights
+- Architecture
+- Repository Structure
+- Dataset
+- Installation
+- Usage
+- Training
+- Inference
+- Results
+- Limitations
+- Future Work
+- Acknowledgements
+- License
+
+---
+
+# Features
+
+- Custom tokenizer trained specifically for legal text
+- Decoder-only language model based on the Mamba State Space Model
+- Training pipeline implemented in PyTorch
+- Mixed Precision (AMP) support
+- Gradient accumulation for memory-efficient training
+- Automatic checkpoint saving
+- Periodic text generation during training
+- Modular and readable implementation
+- Fully reproducible Kaggle notebook
+- Apache 2.0 licensed
+
+---
+
+#  Project Highlights
+
+| Feature | Description |
+|----------|-------------|
+| Architecture | Mamba State Space Model |
+| Framework | PyTorch |
+| Domain | Indian Criminal Law |
+| Tokenizer | Custom-trained |
+| Training | Autoregressive Next Token Prediction |
+| Precision | Mixed Precision (AMP) |
+| Checkpointing | Automatic |
+| Platform | Kaggle |
+
+---
+
+# Why Mamba?
+
+Traditional Transformer models rely on self-attention, which scales quadratically with sequence length. Mamba replaces attention with **Selective State Space Models (SSMs)**, enabling linear-time sequence processing while maintaining strong modeling capabilities.
+
+For long-form legal documents, this architecture offers an attractive trade-off between computational efficiency and language modeling performance.
+
+This repository is intended as an educational and experimental implementation of a domain-specific Mamba language model rather than a production-ready legal AI system.
+
+---
+
+#  Architecture
 
 ```mermaid
-flowchart LR
-	A[Raw PDFs + Judgment datasets] --> B[prepare_corpus.py]
-	B --> C[final_train.txt]
-	C --> D[normalize_data.py / normalize_final.py]
-	D --> E[final_train_v3.txt]
-	E --> F[train_tokenizer.py] --> G[data/tokenizer.json]
-	E & G --> H[src/train.py] --> I[checkpoints/ + model_final.pth]
+flowchart TD
+
+    A["Raw Legal Documents"]
+    B["Corpus Preprocessing"]
+    C["Custom BPE Tokenizer"]
+    D["Tokenized Corpus"]
+    E["Embedding Layer"]
+    F["Mamba Stack (×24)"]
+    G["LayerNorm"]
+    H["Linear Head"]
+    I["Softmax"]
+    J["Generated Legal Text"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
 ```
 
-Repository layout (quick)
-------------------------
-- `src/` — implementation and utilities
-	- `mamba.py` — core Mamba block implementation
-	- `model.py` — model config + wrapper
-	- `train.py` — training loop and hyperparameters
-	- `train_tokenizer.py` — BPE tokenizer training
-	- `prepare_corpus.py` — PDF extraction + optional Hugging Face judgment fetch
-	- `normalize_data.py`, `normalize_final.py` — progressive corpus cleaning
-	- `data_factory.py` — optional synthetic instruction generation (requires API key)
-- `data/` — input corpus, temporary files, tokenizer output (not committed)
-- `checkpoints/` — training checkpoints (ignored)
-- `results/` — post-training artifacts and plots (ignored)
+The model consists of a stack of Mamba blocks followed by a language modeling head. Training follows the standard autoregressive next-token prediction objective.
 
-Data & dataset notes
---------------------
-- Primary sources: cleaned statute PDFs (BNS/BNSS/BSA) and a scraped/chunked set of judgments from Hugging Face (the script references `vihaannnn/Indian-Supreme-Court-Judgements-Chunked`).
-- Cleaning stages:
-	1. `prepare_corpus.py`: extracts text from PDFs and performs structural cleaning (removes headers, TOC dots, page numbers), then saves `data/final_train.txt`.
-	2. `normalize_data.py`: removes Gazette artifacts, encoding noise, and normalizes legal abbreviations.
-	3. `normalize_final.py`: final line-level garbage removal and structural cleanup to produce `data/final_train_v3.txt`.
+---
 
-Tokenization
-------------
-- Trainer: `tokenizers` BPE trainer in `src/train_tokenizer.py` with default `vocab_size=8192` and common special tokens. Adjust `vocab_size` if you expand the corpus.
-- Output: `data/tokenizer.json` — used by `src/train.py` via `tokenizers.Tokenizer.from_file()`.
-
-Model & training details
-------------------------
-Core choices (as implemented):
-- Model: Mamba SSM block, tied embedding + LM head, RMSNorm, depth configurable via `ModelArgs`.
-- Optimizer: AdamW
-- Scheduler: CosineAnnealingLR
-- Gradient clipping: L2 norm clipping at 1.0
-
-Default training hyperparameters (edit `src/train.py`):
+#  Repository Structure
 
 ```text
-BATCH_SIZE = 8
-BLOCK_SIZE = 256
-LR = 3e-4
-MAX_STEPS = 300
-DEVICE = auto-detect (cuda if available)
+Legal-Mamba/
+│
+├── checkpoints/          # Saved model checkpoints
+├── data/                 # Training corpus (if included)
+├── model.py              # Mamba model implementation
+├── train.py              # Training script
+├── tokenizer.json        # Trained tokenizer
+├── LICENSE
+├── README.md
+└── requirements.txt
 ```
 
-Recommended (research) settings for more serious experiments
-- Increase `MAX_STEPS` to 10k–100k depending on dataset size and compute.
-- Use `accelerate` for multi-GPU training; consider mixed precision (AMP) for speed and memory savings.
+The repository is intentionally kept compact, making it easy to understand the complete training workflow without unnecessary abstraction.
 
-Reproducibility & exact commands
---------------------------------
-1. Create env & install:
+---
+
+#  Training Pipeline
+
+##  Project Workflow
+
+```mermaid
+flowchart TD
+
+    subgraph "Data Preparation"
+        A["📚 Indian Criminal Law Documents"]
+        B["🧹 Text Cleaning & Normalization"]
+        C["📄 Final Training Corpus"]
+    end
+
+    subgraph "Tokenization"
+        D["🔤 Train Custom Tokenizer"]
+        E["🔢 Convert Text to Token IDs"]
+    end
+
+    subgraph "Model Training"
+
+        F["⚙️ Initialize Mamba Model"]
+        G["🚀 Autoregressive Training"]
+        H["💾 Save Model Checkpoints"]
+    end
+
+    subgraph "Evaluation"
+        I["📈 Monitor Training Loss"]
+        J["📝 Generate Sample Legal Text"]
+    end
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+
+    classDef prep fill:#E3F2FD,stroke:#1E88E5,color:#000;
+    classDef token fill:#FFF3E0,stroke:#FB8C00,color:#000;
+    classDef train fill:#E8F5E9,stroke:#43A047,color:#000;
+    classDef eval fill:#F3E5F5,stroke:#8E24AA,color:#000;
+
+    class A,B,C prep;
+    class D,E token;
+    class F,G,H train;
+    class I,J eval;
+```
+
+
+This end-to-end workflow enables reproducible experimentation starting from raw legal text and ending with a trained autoregressive language model.
+
+
+---
+
+# Dataset
+
+The model is trained on a curated corpus of Indian criminal law text. The objective is to learn the language patterns, terminology, and structure commonly found in legal documents.
+
+The corpus was prepared through a preprocessing pipeline that included:
+
+- Collection of legal text from publicly available sources
+- Text normalization and cleaning
+- Removal of unnecessary formatting and artifacts
+- Consolidation into a continuous training corpus
+- Tokenization using a custom-trained tokenizer
+
+> **Note**
+>
+> This repository is intended for research and educational purposes. Users are responsible for ensuring compliance with the licenses and terms of any datasets they use.
+
+---
+
+#  Installation
+
+## Clone the repository
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # or .venv\Scripts\Activate.ps1 on Windows
+git clone https://github.com/YOUR_USERNAME/Legal-Mamba.git
+
+cd Legal-Mamba
+```
+
+## Create a virtual environment
+
+Linux / macOS
+
+```bash
+python -m venv venv
+
+source venv/bin/activate
+```
+
+Windows
+
+```powershell
+python -m venv venv
+
+venv\Scripts\activate
+```
+
+## Install dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-2. Prepare corpus (place your PDF files in `data/` and update `PDF_FILES` in `src/prepare_corpus.py`):
+---
+
+#  Requirements
+
+Core libraries used in this project include:
+
+- Python 3.10+
+- PyTorch
+- Tokenizers
+- NumPy
+- tqdm
+
+Additional packages may be required depending on your training environment.
+
+---
+
+#  Training
+
+The entire training process is handled through `train.py`.
+
+Run:
 
 ```bash
-python src/prepare_corpus.py
-python src/normalize_data.py
-python src/normalize_final.py
+python train.py
 ```
 
-3. Train tokenizer (if needed):
+During training, the script performs:
 
-```bash
-python src/train_tokenizer.py
+- Dataset loading
+- Batch preparation
+- Forward pass
+- Loss computation
+- Mixed Precision training (AMP)
+- Gradient accumulation
+- Optimizer update
+- Learning rate scheduling
+- Checkpoint saving
+- Sample text generation
+
+Training progress is periodically displayed in the terminal together with the current loss and generated samples.
+
+---
+
+#  Model
+
+The implementation is intentionally compact and organized into modular components.
+
+| File | Purpose |
+|------|----------|
+| `model.py` | Defines the complete Mamba language model |
+| `train.py` | Training loop and optimization |
+| `tokenizer.json` | Trained tokenizer vocabulary |
+
+This structure makes the repository easy to read, modify, and extend.
+
+---
+
+#  Tokenizer
+
+The project uses a **custom-trained tokenizer** built specifically for legal language.
+
+Benefits include:
+
+- Better handling of legal terminology
+- Reduced token fragmentation
+- Improved representation of domain-specific vocabulary
+- More efficient utilization of the vocabulary
+
+The tokenizer is stored as:
+
+```text
+tokenizer.json
 ```
 
-4. Start training (monitor `checkpoints/`):
+---
 
-```bash
-python src/train.py
+#  Checkpoints
+
+Model checkpoints are saved periodically throughout training.
+
+Example directory:
+
+```text
+checkpoints/
+
+checkpoint_100.pt
+
+checkpoint_200.pt
+
+checkpoint_300.pt
 ```
 
-Optional: run under `accelerate` for multi-GPU
+These checkpoints allow interrupted training to resume and enable intermediate evaluation.
 
-```bash
-accelerate launch src/train.py
+---
+
+#  Usage
+
+After training, load the trained model and tokenizer before generating text.
+
+Example workflow:
+
+```python
+Load tokenizer
+
+Load trained checkpoint
+
+Encode prompt
+
+Run autoregressive generation
+
+Decode output
 ```
 
-Evaluation & validation
------------------------
-- The repo contains a basic loss-tracking mechanism (`loss_history` list). For a rigorous evaluation pipeline you should add:
-	- held-out validation split and periodic eval steps
-	- perplexity logging
-	- downstream tasks: retrieval-augmented QA, summarization fidelity on statutes
+Example prompt
 
-Model card / Responsible release checklist
-----------------------------------------
-Before releasing any trained model, create a `MODEL_CARD.md` covering:
-- Intended use and limitations (legal assistance only — not legal advice)
-- Training data sources, licenses, and any sensitive content handling
-- Evaluation metrics and known failure modes
-- Safety mitigations and recommended guardrails
-- Licensing and attribution (Apache 2.0 + acknowledgement of upstream work)
+```text
+Whereas the First Party agrees to transfer the ownership of the property,
+```
 
-Security & secrets
-------------------
-- Never commit API keys. Use a local `.env` or environment variables. `.gitignore` already excludes `.env` and data artifacts.
-- If secrets were committed previously, rotate them and remove from git history (use `git-filter-repo` or the BFG tool).
+Example generated continuation
 
-Credits & acknowledgements
---------------------------
-- Minimal Mamba implementation adapted from John Ma's `mamba-minimal` repository: https://github.com/johnma2006/mamba-minimal
-- Kaggle notebook and experiments by the project maintainer (see the Kaggle link below).
+![alt text](assets/generate_ans2.png)
 
-Reproducible experiments & provenance
-------------------------------------
-- The original Kaggle runs (notebooks + output logs) are available here:
+---
 
-https://www.kaggle.com/code/namanchanana/legal-mamba-training-on-indian-criminal-law
+# Training Strategy
 
+The model is trained using standard autoregressive language modeling.
 
-License
--------
-This project is licensed under the Apache License 2.0. See the `LICENSE` file for full terms and attribution.
+Training incorporates several optimization techniques:
 
+- Mixed Precision (AMP)
+- AdamW optimizer
+- Gradient accumulation
+- Learning rate scheduling
+- Automatic checkpointing
+- Periodic qualitative evaluation through text generation
+
+These practices improve training efficiency while keeping the implementation relatively simple.
+
+---
+
+# Customization
+
+Several components can be modified depending on experimentation needs:
+
+- Vocabulary size
+- Number of layers
+- Hidden dimension
+- State dimension
+- Context length
+- Batch size
+- Learning rate
+- Number of training iterations
+
+The modular implementation allows researchers to experiment with different configurations with minimal code changes.
+
+---
+
+#  Example Project Workflow
+
+```text
+Raw Legal Documents
+          │
+          ▼
+Corpus Cleaning
+          │
+          ▼
+Tokenizer Training
+          │
+          ▼
+Tokenization
+          │
+          ▼
+Training Dataset
+          │
+          ▼
+Model Training
+          │
+          ▼
+Checkpoint Saving
+          │
+          ▼
+Text Generation
+```
+
+---
+
+# Results
+
+The primary objective of this project was to build a complete, reproducible pipeline for training a domain-specific Mamba language model rather than achieving state-of-the-art benchmark performance.
+
+The implementation successfully demonstrates:
+
+- End-to-end corpus preprocessing
+- Custom tokenizer integration
+- Stable autoregressive training
+- Periodic checkpoint generation
+- Legal text generation during training
+- Modular implementation suitable for experimentation
+
+Example generated text:
+
+![alt text](assets\generate_text.png)
+
+---
+
+#  Limitations
+
+This project is intended as a research and educational implementation.
+
+Current limitations include:
+
+- Training corpus is relatively small compared to modern large language models.
+- Generated text may contain grammatical inconsistencies or repetition.
+- The model has not been instruction-tuned.
+- No retrieval augmentation (RAG) is used.
+- Formal benchmark evaluation has not been performed.
+
+These limitations provide opportunities for future exploration and improvement.
+
+---
+
+# Future Work
+
+Potential future improvements include:
+
+- Expanding the legal corpus with additional publicly available documents.
+- Scaling the model to larger parameter counts.
+- Experimenting with different tokenizer configurations.
+- Incorporating validation metrics such as perplexity.
+- Improving inference and sampling strategies.
+- Exploring fine-tuning for downstream legal NLP tasks.
+
+---
+
+#  Contributing
+
+Contributions that improve the codebase, documentation, or reproducibility are welcome.
+
+If you would like to contribute:
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Submit a pull request with a clear description.
+
+Please keep changes focused, well-documented, and consistent with the project's goals.
+
+---
+
+# Acknowledgements
+
+This project builds upon ideas and tools from the open-source machine learning community.
+
+Special thanks to:
+
+- The Mamba research community for advancing State Space Models.
+- PyTorch for providing the deep learning framework.
+- Hugging Face for tokenizer tooling and ecosystem support.
+- Kaggle for providing an accessible GPU training environment.
+- John Ma for the educational minimal Mamba implementation that inspired parts of the project structure.
+
+Their contributions to open-source machine learning have made projects like this possible.
+
+---
+
+# References
+
+If you use or extend this work, the following resources provide valuable background.
+
+```bibtex
+@article{gu2023mamba,
+  title={Mamba: Linear-Time Sequence Modeling with Selective State Spaces},
+  author={Gu, Albert and Dao, Tri},
+  year={2023}
+}
+```
+
+Additional references can be found in the official Mamba paper and related State Space Model literature.
+
+---
+
+# 📄 License
+
+This project is licensed under the Apache License 2.0.
+
+See the [LICENSE](LICENSE) file for the full license text.
+
+---
+
+#  Support
+
+If you found this repository useful for learning or experimentation, consider giving it a ⭐ on GitHub.
+
+Feedback, suggestions, and constructive discussions are always appreciated.
+
+---
+
+<div align="center">
+
+### Built with ❤️ using PyTorch and Mamba
+
+**Legal-Mamba — Exploring State Space Models for Indian Criminal Law**
+
+</div>
 
 
