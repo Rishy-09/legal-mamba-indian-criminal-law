@@ -14,6 +14,11 @@
 
 </div>
 
+
+<p align="center">
+  <img src="assets/banner.png" alt="Legal-Mamba Banner" width="100%">
+</p>
+
 ---
 
 > **Legal-Mamba** explores the application of State Space Models (SSMs) to legal language modeling by training a compact autoregressive model on a curated corpus of Indian criminal law documents. The project covers the complete pipeline—from corpus preparation and tokenizer training to model training and text generation—in a fully reproducible workflow.
