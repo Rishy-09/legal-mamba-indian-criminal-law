@@ -400,34 +400,6 @@ The modular implementation allows researchers to experiment with different confi
 
 ---
 
-#  Example Project Workflow
-
-```text
-Raw Legal Documents
-          │
-          ▼
-Corpus Cleaning
-          │
-          ▼
-Tokenizer Training
-          │
-          ▼
-Tokenization
-          │
-          ▼
-Training Dataset
-          │
-          ▼
-Model Training
-          │
-          ▼
-Checkpoint Saving
-          │
-          ▼
-Text Generation
-```
-
----
 
 # Results
 
@@ -444,7 +416,7 @@ The implementation successfully demonstrates:
 
 Example generated text:
 
-![alt text](assets\generate_text.png)
+![alt text](assets/generate_text.png)
 
 ---
 
