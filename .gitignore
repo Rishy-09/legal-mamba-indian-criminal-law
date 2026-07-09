@@ -19,16 +19,10 @@ ENV/
 .env.*
 
 # PyTorch / training artifacts
-checkpoints/
-results/
 *.pth
 model_*.pth
 
 # Data
-data/
-data/*.bin
-data/*.pkl
-data/tokenizer.json
 
 # Jupyter
 .ipynb_checkpoints
