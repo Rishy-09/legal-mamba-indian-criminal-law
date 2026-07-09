@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables / secrets
+.env
+.env.*
+
+# PyTorch / training artifacts
+checkpoints/
+results/
+*.pth
+model_*.pth
+
+# Data
+data/
+data/*.bin
+data/*.pkl
+data/tokenizer.json
+
+# Jupyter
+.ipynb_checkpoints
+
+# VS Code / JetBrains
+.vscode/
+.idea/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Other
+*.orig
+

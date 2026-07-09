@@ -1,0 +1,12 @@
+torch>=2.0
+transformers>=4.30
+einops>=0.6
+tokenizers>=0.13.2
+datasets>=2.12
+tqdm>=4.64
+PyMuPDF>=1.22
+google-generativeai>=0.2
+
+# Optional / recommended for training infrastructure
+accelerate>=0.20
+torchvision>=0.15
