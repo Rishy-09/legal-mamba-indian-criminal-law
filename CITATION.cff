@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use or build upon Legal-Mamba, please cite this repository."
+
+title: "Legal-Mamba: A Domain-Specific Mamba Language Model for Indian Criminal Law"
+type: software
+
+authors:
+  - family-names: "Chanana"
+    given-names: "Naman"
+
+abstract: >-
+  Legal-Mamba is a compact autoregressive language model based on the
+  Mamba State Space Model architecture and trained on a curated corpus
+  of Indian criminal-law text. The repository includes corpus preparation,
+  a custom BPE tokenizer, model implementation, training pipeline,
+  checkpoint metadata, training history, and legal-text generation examples.
+
+repository-code: "https://github.com/Rishy-09/legal-mamba-indian-criminal-law"
+url: "https://github.com/Rishy-09/legal-mamba-indian-criminal-law"
+
+license: Apache-2.0
+
+keywords:
+  - mamba
+  - state-space-model
+  - language-model
+  - legal-nlp
+  - legal-ai
+  - indian-law
+  - pytorch
+  - natural-language-processing
