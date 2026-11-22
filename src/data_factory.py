@@ -102,7 +102,10 @@ def generate_synthetic_data():
     print(f"\n✅ Dataset Generation Complete! Saved to {output_file}")
 
 if __name__ == "__main__":
-    if "PASTE_YOUR" in API_KEY:
-        print("❌ Please paste your API Key inside the script first!")
+    if not API_KEY or "PASTE_YOUR" in API_KEY:
+        raise ValueError(
+            "GOOGLE_API_KEY is not configured. "
+            "Set the GOOGLE_API_KEY environment variable before running data_factory.py."
+        )
     else:
         generate_synthetic_data()
