@@ -91,7 +91,7 @@ The repository preserves the complete 300-step loss history in [`results/loss_hi
 | Recorded steps | **300** |
 
 <p align="center">
-  <img src="assets/legal_mamba_loss_curve.png" width="90%" alt="Legal-Mamba training loss curve">
+  <img src="assets/loss_curve.png" width="90%" alt="Legal-Mamba training loss curve">
 </p>
 
 The curve demonstrates substantial optimization during the short experimental run. Loss is not strictly monotonic—as expected with mini-batch stochastic training—but the overall trajectory falls strongly from the initial value.
