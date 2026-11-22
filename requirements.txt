@@ -8,5 +8,5 @@ PyMuPDF>=1.22
 google-generativeai>=0.2
 
 # Optional / recommended for training infrastructure
-accelerate>=0.20
-torchvision>=0.15
+# accelerate>=0.20
+# torchvision>=0.15
