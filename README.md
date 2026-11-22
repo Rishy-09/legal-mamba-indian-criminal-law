@@ -51,10 +51,7 @@
 - Custom tokenizer trained specifically for legal text
 - Decoder-only language model based on the Mamba State Space Model
 - Training pipeline implemented in PyTorch
-- Mixed Precision (AMP) support
-- Gradient accumulation for memory-efficient training
 - Automatic checkpoint saving
-- Periodic text generation during training
 - Modular and readable implementation
 - Fully reproducible Kaggle notebook
 - Apache 2.0 licensed
@@ -70,7 +67,6 @@
 | Domain | Indian Criminal Law |
 | Tokenizer | Custom-trained |
 | Training | Autoregressive Next Token Prediction |
-| Precision | Mixed Precision (AMP) |
 | Checkpointing | Automatic |
 | Platform | Kaggle |
 
@@ -119,20 +115,40 @@ The model consists of a stack of Mamba blocks followed by a language modeling he
 
 #  Repository Structure
 
-```text
-Legal-Mamba/
+legal-mamba-indian-criminal-law/
 │
-├── checkpoints/          # Saved model checkpoints
-├── data/                 # Training corpus (if included)
-├── model.py              # Mamba model implementation
-├── train.py              # Training script
-├── tokenizer.json        # Trained tokenizer
+├── src/
+│   ├── model.py              Mamba language-model architecture
+│   ├── train.py              Training pipeline
+│   └── data_factory.py       Legal corpus/data preparation
+│
+├── data/
+│   ├── tokenizer.json        Trained tokenizer
+│   └── final_corpus.txt      Final legal training corpus
+│
+├── checkpoints/
+│   └── dataset.md            External trained-checkpoint information
+│
+├── results/
+│   └── loss_history.csv      Recorded training-loss history
+│
+├── outputs/                  Generated text / model outputs
+├── images/                   Training and generation screenshots
+├── legal_sources/            Source legal documents
+│
+├── requirements.txt
 ├── LICENSE
-├── README.md
-└── requirements.txt
-```
+└── README.md
 
-The repository is intentionally kept compact, making it easy to understand the complete training workflow without unnecessary abstraction.
+### Trained Checkpoint
+
+The trained model checkpoint is not stored directly in the Git repository because of its size (~513 MB).
+
+Checkpoint access and details are provided in:
+
+[`checkpoints/dataset.md`](checkpoints/dataset.md)
+
+The trained artifact is hosted externally on Kaggle.
 
 ---
 
@@ -216,9 +232,9 @@ The corpus was prepared through a preprocessing pipeline that included:
 ## Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/Legal-Mamba.git
+git clone https://github.com/Rishy-09/legal-mamba-indian-criminal-law.git
 
-cd Legal-Mamba
+cd legal-mamba-indian-criminal-law
 ```
 
 ## Create a virtual environment
@@ -268,7 +284,7 @@ The entire training process is handled through `train.py`.
 Run:
 
 ```bash
-python train.py
+python src/train.py
 ```
 
 During training, the script performs:
@@ -296,7 +312,7 @@ The implementation is intentionally compact and organized into modular component
 |------|----------|
 | `model.py` | Defines the complete Mamba language model |
 | `train.py` | Training loop and optimization |
-| `tokenizer.json` | Trained tokenizer vocabulary |
+| `data/tokenizer.json` | Trained tokenizer vocabulary |
 
 This structure makes the repository easy to read, modify, and extend.
 
@@ -316,7 +332,7 @@ Benefits include:
 The tokenizer is stored as:
 
 ```text
-tokenizer.json
+data/tokenizer.json
 ```
 
 ---
@@ -330,7 +346,7 @@ Example directory:
 ```text
 checkpoints/
 
-checkpoint_100.pt
+model_step_100.pth
 
 checkpoint_200.pt
 
@@ -377,9 +393,8 @@ The model is trained using standard autoregressive language modeling.
 
 Training incorporates several optimization techniques:
 
-- Mixed Precision (AMP)
+
 - AdamW optimizer
-- Gradient accumulation
 - Learning rate scheduling
 - Automatic checkpointing
 - Periodic qualitative evaluation through text generation
